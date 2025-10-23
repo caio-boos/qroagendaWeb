@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
 
         // Enviar notificação push para o app Expo, se o usuário tiver token
         try {
+            console.log("Sending push notification to client:", clientId)
             const userSnap = await adminDb.collection("users").doc(clientId).get()
             if (userSnap.exists) {
                 const user = userSnap.data()
@@ -90,6 +91,9 @@ export async function POST(request: NextRequest) {
                             sound: "default"
                         })
                     })
+                    console.log("Push notification sent to:", user.name)
+                }else{
+                    console.log("User does not have push token or notifications disabled:", clientId)
                 }
             }
         } catch (err) {
