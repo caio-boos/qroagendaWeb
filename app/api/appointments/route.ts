@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
                         body: JSON.stringify({
                             to: user.expoPushToken,
                             title: "Novo agendamento",
-                            body: `Seu agendamento foi criado para ${date} às ${startTime}`,
+                            body: `Uma nova solicitação de agendamento foi criada para ${date} às ${startTime}`,
                             sound: "default"
                         })
                     })

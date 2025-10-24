@@ -1,7 +1,7 @@
 {
    "crons": [
       {
-        "path": "/api/crons/remind-appointments?token=65C27C85A3CC5C69FDD073CBC1004DB1CE8DD75E2B6AE6F776107637DC902805",
+        "path": "/api/remind-appointments?token=65C27C85A3CC5C69FDD073CBC1004DB1CE8DD75E2B6AE6F776107637DC902805",
         "schedule": "0/5 * * * *"
       }
    ]
