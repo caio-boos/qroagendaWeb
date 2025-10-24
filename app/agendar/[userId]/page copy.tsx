@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { Loader2, Search, ClipboardList, Calendar as CalendarIcon, Clock, Check, XCircle } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 interface Service {
     id: string
@@ -44,23 +44,11 @@ export default function SchedulingPage({ params }: { params: Promise<{ userId: s
     const [services, setServices] = useState<Service[]>([])
     const [availableSlots, setAvailableSlots] = useState<string[]>([])
     const [settings, setSettings] = useState<Settings | null>(null)
-    const [serviceQuery, setServiceQuery] = useState("")
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
     const [loadingSlots, setLoadingSlots] = useState(false)
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
-
-    // Helper to convert hex color to rgba with given alpha
-    const hexToRgba = (hex: string | undefined, alpha: number) => {
-        if (!hex) return `rgba(0,0,0,${alpha})`
-        const cleaned = hex.replace('#', '')
-        const bigint = parseInt(cleaned.length === 3 ? cleaned.split('').map(c => c + c).join('') : cleaned, 16)
-        const r = (bigint >> 16) & 255
-        const g = (bigint >> 8) & 255
-        const b = bigint & 255
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`
-    }
 
     // --- AUTENTICAÇÃO CLIENTE ---
     const [authMode, setAuthMode] = useState<"login" | "register">("login")
@@ -551,77 +539,54 @@ export default function SchedulingPage({ params }: { params: Promise<{ userId: s
                         <form onSubmit={handleSubmit} className="space-y-8">
                             {/* Services Selection */}
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-lg font-semibold text-gray-700">Escolha seus serviços</Label>
-                                    <div className="text-sm text-gray-500">{services.length} disponíveis</div>
-                                </div>
-
-                                {/* Search/filter */}
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-md shadow-sm w-full">
-                                        <Search className="text-gray-400" />
-                                        <Input
-                                            placeholder="Pesquisar serviços..."
-                                            value={serviceQuery}
-                                            onChange={(e) => setServiceQuery(e.target.value)}
-                                            className="flex-1 bg-transparent border-0 p-0 focus:ring-0"
-                                        />
-                                    </div>
-                                </div>
-
+                                <Label className="text-lg font-semibold text-gray-700">✨ Escolha seus serviços</Label>
                                 {services.length === 0 ? (
-                                    <div className="text-center py-8 flex items-center justify-center text-gray-500 gap-2">
-                                        <Search />
-                                        <p>Nenhum serviço disponível</p>
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500">🔍 Nenhum serviço disponível</p>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
-                                        {services
-                                            .filter((s) => s.name.toLowerCase().includes(serviceQuery.trim().toLowerCase()))
-                                            .map((service) => {
-                                                const isSelected = selectedServices.some((s) => s.id === service.id)
-                                                const circleBg = isSelected ? hexToRgba(service.color, 0.18) : 'transparent'
-                                                const circleBorder = hexToRgba(service.color, 0.6)
-                                                const badgeBg = hexToRgba(service.color, 0.12)
-                                                return (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {services.map((service) => (
+                                            <div
+                                                key={service.id}
+                                                className={`relative rounded-xl border-2 p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${selectedServices.some((s) => s.id === service.id)
+                                                        ? 'border-blue-500 bg-blue-50 shadow-md'
+                                                        : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                                onClick={() => handleServiceToggle(service)}
+                                            >
+                                                <div className="flex items-center space-x-3">
                                                     <div
-                                                        key={service.id}
-                                                        className={`relative rounded-xl border p-4 cursor-pointer transition-all duration-200 ${isSelected ? 'shadow-md border-purple-300 bg-white/50' : 'border-gray-200 hover:shadow-sm'}`}
-                                                        onClick={() => handleServiceToggle(service)}
+                                                        className="w-6 h-6 rounded-full border-2 flex items-center justify-center"
+                                                        style={{
+                                                            backgroundColor: selectedServices.some((s) => s.id === service.id) ? service.color : 'transparent',
+                                                            borderColor: service.color
+                                                        }}
                                                     >
-                                                        <div className="flex items-center space-x-3">
+                                                        {selectedServices.some((s) => s.id === service.id) && (
+                                                            <span className="text-white text-sm">✓</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <h3 className="font-semibold text-gray-800">{service.name}</h3>
                                                             <div
-                                                                className="w-6 h-6 rounded-full border-2 flex items-center justify-center"
-                                                                style={{
-                                                                    backgroundColor: circleBg,
-                                                                    borderColor: circleBorder
-                                                                }}
-                                                            >
-                                                                {isSelected && (
-                                                                    <Check className="text-purple-700" size={12} />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center justify-between">
-                                                                    <h3 className="font-semibold text-gray-800">{service.name}</h3>
-                                                                    <div
-                                                                        className="w-4 h-4 rounded-full"
-                                                                        style={{ backgroundColor: badgeBg, border: `1px solid ${circleBorder}` }}
-                                                                    />
-                                                                </div>
-                                                                <div className="flex items-center justify-between mt-1">
-                                                                    <span className="text-lg font-semibold text-gray-800">
-                                                                        R$ {service.price.toFixed(2)}
-                                                                    </span>
-                                                                    <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                                                                        {service.duration} min
-                                                                    </span>
-                                                                </div>
-                                                            </div>
+                                                                className="w-4 h-4 rounded-full"
+                                                                style={{ backgroundColor: service.color }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center justify-between mt-1">
+                                                            <span className="text-2xl font-bold text-green-600">
+                                                                R$ {service.price.toFixed(2)}
+                                                            </span>
+                                                            <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                                                ⏱️ {service.duration} min
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                )
-                                            })}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -631,7 +596,7 @@ export default function SchedulingPage({ params }: { params: Promise<{ userId: s
                                 <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2"><ClipboardList />Resumo do agendamento</h3>
+                                            <h3 className="text-lg font-semibold text-gray-800">📋 Resumo do agendamento</h3>
                                             <p className="text-sm text-gray-600">{selectedServices.length} serviço(s) selecionado(s)</p>
                                         </div>
                                         <div className="text-right">
@@ -660,7 +625,7 @@ export default function SchedulingPage({ params }: { params: Promise<{ userId: s
                             {/* Date Selection */}
                             {selectedServices.length > 0 && (
                                 <div className="space-y-4">
-                                    <Label className="text-lg font-semibold text-gray-700 flex items-center gap-2"><CalendarIcon />Escolha a data</Label>
+                                    <Label className="text-lg font-semibold text-gray-700">📅 Escolha a data</Label>
 
                                     {/* Month Navigation */}
                                     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
@@ -736,7 +701,7 @@ export default function SchedulingPage({ params }: { params: Promise<{ userId: s
                             {/* Time Slots */}
                             {selectedDate && selectedServices.length > 0 && (
                                 <div className="space-y-4">
-                                    <Label className="text-lg font-semibold text-gray-700 flex items-center gap-2"><Clock />Horários disponíveis</Label>
+                                    <Label className="text-lg font-semibold text-gray-700">🕐 Horários disponíveis</Label>
                                     {loadingSlots ? (
                                         <div className="flex items-center justify-center py-12">
                                             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -744,10 +709,7 @@ export default function SchedulingPage({ params }: { params: Promise<{ userId: s
                                         </div>
                                     ) : availableSlots.length === 0 ? (
                                         <div className="text-center py-8 bg-gray-50 rounded-lg">
-                                            <div className="flex items-center justify-center gap-2 text-gray-500">
-                                                <XCircle />
-                                                <p>Nenhum horário disponível para esta data</p>
-                                            </div>
+                                            <p className="text-gray-500">😔 Nenhum horário disponível para esta data</p>
                                             <p className="text-sm text-gray-400 mt-1">Tente escolher outra data</p>
                                         </div>
                                     ) : (
@@ -785,8 +747,7 @@ export default function SchedulingPage({ params }: { params: Promise<{ userId: s
                                         </>
                                     ) : (
                                         <>
-                                            <Check className="mr-2 h-5 w-5" />
-                                            Confirmar Agendamento
+                                            ✅ Confirmar Agendamento
                                         </>
                                     )}
                                 </Button>

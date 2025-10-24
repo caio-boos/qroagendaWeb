@@ -22,9 +22,41 @@ export async function POST(request: NextRequest) {
         const settings = settingsSnapshot.docs[0].data()
         console.log("Settings found:", settings)
 
-        // Check if date is closed - ensure consistent date format
+        // Ensure consistent date format
         const dateStr = date // Should be in YYYY-MM-DD format
-        if (settings?.closedDates?.includes(dateStr)) {
+
+        // If public scheduling is disabled for this salon, return no slots
+        if (settings?.publicSchedulingEnabled === false) {
+            console.log("Public scheduling disabled for user:", userId)
+            return NextResponse.json({ slots: [] })
+        }
+
+        // Respect schedulingOpenUntil: if present and date requested is after the limit, return no slots
+        // schedulingOpenUntil may be a string YYYY-MM-DD, a Firestore Timestamp-like object, or null/undefined
+        let schedulingOpenUntilStr: string | null = null
+        const schedulingOpenUntil = settings?.schedulingOpenUntil
+        if (schedulingOpenUntil) {
+            if (typeof schedulingOpenUntil === 'string') {
+                schedulingOpenUntilStr = schedulingOpenUntil
+            } else if (typeof schedulingOpenUntil === 'object') {
+                // Firestore Timestamp object: has toDate() or seconds
+                if (typeof schedulingOpenUntil.toDate === 'function') {
+                    schedulingOpenUntilStr = schedulingOpenUntil.toDate().toISOString().split('T')[0]
+                } else if (typeof schedulingOpenUntil.seconds === 'number') {
+                    schedulingOpenUntilStr = new Date(schedulingOpenUntil.seconds * 1000).toISOString().split('T')[0]
+                }
+            }
+        }
+
+        if (schedulingOpenUntilStr) {
+            if (dateStr > schedulingOpenUntilStr) {
+                console.log("Requested date is beyond schedulingOpenUntil:", dateStr, schedulingOpenUntilStr)
+                return NextResponse.json({ slots: [] })
+            }
+        }
+
+        // Check if date is closed
+        if (Array.isArray(settings?.closedDates) && settings.closedDates.includes(dateStr)) {
             console.log("Date is closed:", dateStr)
             return NextResponse.json({ slots: [] })
         }
