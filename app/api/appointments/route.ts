@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
             const ownerSnap = await adminDb.collection("users").doc(userId).get()
             if (ownerSnap.exists) {
                 const owner = ownerSnap.data()
-                if (owner?.expoPushToken && owner?.notificationsEnabled) {
+                // notificationsEnabled
+                if (owner?.expoPushToken) {
                     // Informações do cliente que criou o agendamento
                     const clientName = clientData?.name || clientNameFromBody || phone
                     const bodyText = `Novo agendamento de ${clientName} em ${date} às ${startTime}`
