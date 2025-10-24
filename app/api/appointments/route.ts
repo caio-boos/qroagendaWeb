@@ -6,6 +6,8 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
         const { userId, phone, date, services, startTime } = body
+        // optional client name from request
+        const clientNameFromBody = (body.name || body.clientName || "").trim()
 
         // Validate required fields
         if (!userId || !phone || !date || !services || !Array.isArray(services) || services.length === 0) {
@@ -35,17 +37,23 @@ export async function POST(request: NextRequest) {
         let clientData: any = null
 
         if (clientsSnapshot.empty) {
-            // Create new client
+            // Create new client (use provided name if available)
             const newClientRef = await adminDb.collection("clients").add({
                 phone,
                 userId,
-                name: "",
+                name: clientNameFromBody || "",
                 notes: "",
             })
             clientId = newClientRef.id
+            clientData = { name: clientNameFromBody || "", phone, userId }
         } else {
             clientId = clientsSnapshot.docs[0].id
             clientData = clientsSnapshot.docs[0].data()
+            // If we have a name from the request and the stored client has no name, update it
+            if (clientNameFromBody && !clientData.name) {
+                await adminDb.collection("clients").doc(clientId).update({ name: clientNameFromBody })
+                clientData.name = clientNameFromBody
+            }
         }
 
         // Create appointment
@@ -53,6 +61,7 @@ export async function POST(request: NextRequest) {
             client: {
                 clientId,
                 phone,
+                name: clientData?.name || clientNameFromBody || "",
             },
             createdAt: FieldValue.serverTimestamp(),
             date,
@@ -92,7 +101,7 @@ export async function POST(request: NextRequest) {
                         })
                     })
                     console.log("Push notification sent to:", user.name)
-                }else{
+                } else {
                     console.log("User does not have push token or notifications disabled:", clientId)
                 }
             }

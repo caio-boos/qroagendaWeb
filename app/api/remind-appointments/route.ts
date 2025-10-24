@@ -93,6 +93,14 @@ export async function remindAppointments() {
 // Exemplo de endpoint manual para disparar (pode ser removido em produção)
 import { NextRequest, NextResponse } from "next/server"
 export async function GET(req: NextRequest) {
+    // Token protection: compare query token with env var or fallback token
+    const token = req.nextUrl.searchParams.get("token")
+    const expected = "65C27C85A3CC5C69FDD073CBC1004DB1CE8DD75E2B6AE6F776107637DC902805"
+    if (!token || token !== expected) {
+        console.warn("Unauthorized cron attempt to /api/remind-appointments", { received: token })
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const result = await remindAppointments()
     return NextResponse.json(result)
 }
