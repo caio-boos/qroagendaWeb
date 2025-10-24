@@ -81,29 +81,35 @@ export async function POST(request: NextRequest) {
 
         const appointmentRef = await adminDb.collection("appointments").add(appointmentData)
 
-        // Enviar notificação push para o app Expo, se o usuário tiver token
+        // Enviar notificação push para o dono do salão (userId), se o dono tiver token
         try {
-            console.log("Sending push notification to client:", clientId)
-            const userSnap = await adminDb.collection("users").doc(clientId).get()
-            if (userSnap.exists) {
-                const user = userSnap.data()
-                if (user?.expoPushToken && user?.notificationsEnabled) {
+            console.log("Sending push notification to salon owner (userId):", userId)
+            const ownerSnap = await adminDb.collection("users").doc(userId).get()
+            if (ownerSnap.exists) {
+                const owner = ownerSnap.data()
+                if (owner?.expoPushToken && owner?.notificationsEnabled) {
+                    // Informações do cliente que criou o agendamento
+                    const clientName = clientData?.name || clientNameFromBody || phone
+                    const bodyText = `Novo agendamento de ${clientName} em ${date} às ${startTime}`
+
                     await fetch("https://exp.host/--/api/v2/push/send", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            to: user.expoPushToken,
-                            title: "Novo agendamento",
-                            body: `Uma nova solicitação de agendamento foi criada para ${date} às ${startTime}`,
+                            to: owner.expoPushToken,
+                            title: "Nova solicitação de agendamento",
+                            body: bodyText,
                             sound: "default"
                         })
                     })
-                    console.log("Push notification sent to:", user.name)
+                    console.log("Push notification sent to owner:", owner.name || userId)
                 } else {
-                    console.log("User does not have push token or notifications disabled:", clientId)
+                    console.log("Owner does not have push token or notifications disabled:", userId)
                 }
+            } else {
+                console.log("Owner user document not found for userId:", userId)
             }
         } catch (err) {
             console.error("Erro ao enviar push notification:", err)
