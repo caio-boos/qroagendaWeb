@@ -185,7 +185,10 @@ function calculateAvailableSlots(
     // Generate slots every 15 minutes
     const slotInterval = 15
 
-    for (let time = workStart; time + totalDuration <= workEnd; time += slotInterval) {
+    // Allow slots that start at or before the closing time even if the service would end after closing.
+    // This enables allowing e.g. a 3h service starting at 16:00 when closing is 18:00 (ends at 19:00),
+    // provided the slot does not overlap any existing appointment/lunch break.
+    for (let time = workStart; time <= workEnd; time += slotInterval) {
         const slotEnd = time + totalDuration
 
         // Check if slot overlaps with any occupied range
